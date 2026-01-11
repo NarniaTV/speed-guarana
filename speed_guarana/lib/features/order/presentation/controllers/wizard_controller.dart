@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../data/datasources/menu_mock_datasource.dart';
 import '../../domain/entities/ingredient.dart';
 
+enum OrderStep { flavor, complements, toppings, review }
+
 class WizardController extends ChangeNotifier {
-  final WizardState value = WizardState();
+  final WizardState state = WizardState();
   final MenuMockDataSource _dataSource = MenuMockDataSource();
 
   WizardController() {
@@ -11,59 +13,108 @@ class WizardController extends ChangeNotifier {
   }
 
   Future<void> _loadMenu() async {
-    value.isLoading = true;
+    state.isLoading = true;
     notifyListeners();
-
     try {
       final items = await _dataSource.getIngredients();
-      value.menu = items;
-    } catch (e) {
-      debugPrint("Erro ao carregar menu: $e");
+      state.fullMenu = items;
     } finally {
-      value.isLoading = false;
+      state.isLoading = false;
       notifyListeners();
     }
   }
 
-  void addTopping(Ingredient ingredient) {
-    // Regra: Máximo 2 adicionais
-    if (value.selectedToppings.length < 2) {
-      value.selectedToppings.add(ingredient);
-      _calculateTotal();
-      notifyListeners();
+  // --- Lógica de Navegação ---
+  void nextStep() {
+    if (state.currentStep == OrderStep.flavor && state.selectedFlavor == null) return;
+    
+    if (state.currentStep == OrderStep.flavor) {
+      state.currentStep = OrderStep.complements;
+    } else if (state.currentStep == OrderStep.complements) {
+      state.currentStep = OrderStep.toppings;
+    } else if (state.currentStep == OrderStep.toppings) {
+      state.currentStep = OrderStep.review; // Poderia ir para checkout
     }
-  }
-
-  void removeTopping(Ingredient ingredient) {
-    value.selectedToppings.removeWhere((item) => item.id == ingredient.id);
-    _calculateTotal();
     notifyListeners();
   }
 
-  void setSize(int sizeIndex) {
-    value.sizeIndex = sizeIndex;
-    _calculateTotal();
+  void previousStep() {
+    if (state.currentStep == OrderStep.complements) {
+      state.currentStep = OrderStep.flavor;
+    } else if (state.currentStep == OrderStep.toppings) {
+      state.currentStep = OrderStep.complements;
+    } else if (state.currentStep == OrderStep.review) {
+      state.currentStep = OrderStep.toppings;
+    }
     notifyListeners();
   }
-  
-  void reset() {
-    value.selectedToppings.clear();
-    value.sizeIndex = 0;
-    value.totalPrice = 10.0;
+
+  // --- Lógica de Seleção ---
+  void selectItem(Ingredient item) {
+    switch (item.type) {
+      case IngredientType.flavor:
+        state.selectedFlavor = item;
+        // Se trocar o sabor, pode animar o copo mudando de cor
+        break;
+      case IngredientType.complement:
+        if (state.selectedComplements.contains(item)) {
+          state.selectedComplements.remove(item);
+        } else if (state.selectedComplements.length < 3) { // Max 3 complementos
+          state.selectedComplements.add(item);
+        }
+        break;
+      case IngredientType.topping:
+        if (state.selectedToppings.contains(item)) {
+          state.selectedToppings.remove(item);
+        } else if (state.selectedToppings.length < 2) { // Max 2 coberturas
+          state.selectedToppings.add(item);
+        }
+        break;
+    }
+    _calculateTotal();
     notifyListeners();
   }
 
   void _calculateTotal() {
-    double basePrice = 10.0 + (value.sizeIndex * 5.0); // 10, 15, 20
-    double toppingsPrice = value.selectedToppings.fold(0, (sum, item) => sum + item.price);
-    value.totalPrice = basePrice + toppingsPrice;
+    double total = 10.0; // Preço base do copo vazio
+    if (state.selectedFlavor != null) total += state.selectedFlavor!.price;
+    for (var i in state.selectedComplements) total += i.price;
+    for (var i in state.selectedToppings) total += i.price;
+    state.totalPrice = total;
+  }
+  
+  // Filtra o menu para mostrar apenas o que é relevante para o passo atual
+  List<Ingredient> get currentStepItems {
+    switch (state.currentStep) {
+      case OrderStep.flavor:
+        return state.fullMenu.where((i) => i.type == IngredientType.flavor).toList();
+      case OrderStep.complements:
+        return state.fullMenu.where((i) => i.type == IngredientType.complement).toList();
+      case OrderStep.toppings:
+        return state.fullMenu.where((i) => i.type == IngredientType.topping).toList();
+      default:
+        return [];
+    }
+  }
+
+  String get stepTitle {
+    switch (state.currentStep) {
+      case OrderStep.flavor: return "Escolha a Base";
+      case OrderStep.complements: return "Complementos (Máx 3)";
+      case OrderStep.toppings: return "Cobertura Final (Máx 2)";
+      case OrderStep.review: return "Revisão";
+    }
   }
 }
 
 class WizardState {
   bool isLoading = false;
-  int sizeIndex = 0;
+  OrderStep currentStep = OrderStep.flavor;
   double totalPrice = 10.0;
-  List<Ingredient> menu = [];
+  
+  List<Ingredient> fullMenu = [];
+  
+  Ingredient? selectedFlavor;
+  List<Ingredient> selectedComplements = [];
   List<Ingredient> selectedToppings = [];
 }
