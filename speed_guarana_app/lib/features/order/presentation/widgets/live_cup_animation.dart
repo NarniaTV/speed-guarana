@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rive/rive.dart';
-import '../../controllers/wizard_controller.dart';
+
+// 1. IMPORT CORRIGIDO (Caminho relativo correto)
+import '../../../cup_builder/presentation/controllers/wizard_controller.dart';
 import '../../../cup_builder/domain/models/cup_size.dart';
 
 class LiveCupAnimation extends StatefulWidget {
-  final WizardController controller;
+  final WizardController controller; 
 
   const LiveCupAnimation({super.key, required this.controller});
 
@@ -14,8 +16,9 @@ class LiveCupAnimation extends StatefulWidget {
 }
 
 class _LiveCupAnimationState extends State<LiveCupAnimation> {
-  // Na v0.14, usamos RiveWidgetController em vez de StateMachineController
-  RiveWidgetController? _riveController;
+  // Usaremos Artboard e StateMachineController (Padrão robusto)
+  Artboard? _riveArtboard;
+  StateMachineController? _controller;
   bool _isLoaded = false;
 
   @override
@@ -28,25 +31,29 @@ class _LiveCupAnimationState extends State<LiveCupAnimation> {
   @override
   void dispose() {
     widget.controller.removeListener(_onStateChange);
-    _riveController?.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
   Future<void> _initRive() async {
     try {
+      // Carrega os bytes do asset
       final bytes = await rootBundle.load('assets/rive/cup_v1.riv');
       
-      // Nova API de decodificação de arquivo (File.decode)
-      final file = await File.decode(bytes, factory: Factory.rive);
+      // Inicializa o arquivo Rive (Método seguro v0.14+)
+      final file = RiveFile.import(bytes);
+      final artboard = file.mainArtboard;
       
-      // Inicializa o Controller selecionando a State Machine
-      final controller = RiveWidgetController(
-        file,
-        stateMachineSelector: StateMachineSelector.byName('MixingState'),
-      );
+      // Cria o controller da State Machine
+      final controller = StateMachineController.fromArtboard(artboard, 'MixingState');
+
+      if (controller != null) {
+        artboard.addController(controller);
+        _controller = controller;
+      }
 
       setState(() {
-        _riveController = controller;
+        _riveArtboard = artboard;
         _isLoaded = true;
       });
 
@@ -70,31 +77,29 @@ class _LiveCupAnimationState extends State<LiveCupAnimation> {
   }
 
   void _onStateChange() {
-    // Se o controller ou a state machine não estiverem prontos, aborta
-    if (!_isLoaded || _riveController == null) return;
-
-    final sm = _riveController!.stateMachine;
-    if (sm == null) return;
+    if (!_isLoaded || _controller == null) return;
 
     final wizard = widget.controller;
-
-    // --- 1. Atualiza Tamanho (Number Input) ---
-    // Sintaxe Nova: sm.number('Nome').value = X
+    
+    // Acessando inputs diretamente pelo nome na State Machine
+    // Isso evita ter que guardar referências de variáveis SMINumber
+    
+    // 1. Atualiza Tamanho
     final sizeIndex = wizard.tempSize.id.index + 1.0;
-    final sizeInput = sm.number('CupSize');
+    final sizeInput = _controller!.findInput<SMINumber>('CupSize');
     if (sizeInput != null && sizeInput.value != sizeIndex) {
       sizeInput.value = sizeIndex;
     }
 
-    // --- 2. Atualiza Base ---
+    // 2. Atualiza Base
     final baseId = wizard.tempBase?.id;
     final baseVal = baseId != null ? _mapIngredientIdToRive(baseId) : 0.0;
-    final baseInput = sm.number('BaseType');
+    final baseInput = _controller!.findInput<SMINumber>('BaseType');
     if (baseInput != null && baseInput.value != baseVal) {
       baseInput.value = baseVal;
     }
 
-    // --- 3. Toppings e Slots ---
+    // 3. Toppings e Slots
     final toppings = wizard.tempToppings;
     double slot1Val = 0;
     double slot2Val = 0;
@@ -108,21 +113,21 @@ class _LiveCupAnimationState extends State<LiveCupAnimation> {
 
     bool hasChanged = false;
     
-    final s1Input = sm.number('Slot1_Id');
+    final s1Input = _controller!.findInput<SMINumber>('Slot1_Id');
     if (s1Input != null && s1Input.value != slot1Val) {
       s1Input.value = slot1Val;
       hasChanged = true;
     }
 
-    final s2Input = sm.number('Slot2_Id');
+    final s2Input = _controller!.findInput<SMINumber>('Slot2_Id');
     if (s2Input != null && s2Input.value != slot2Val) {
       s2Input.value = slot2Val;
       hasChanged = true;
     }
 
-    // --- 4. Dispara Trigger (Física) ---
+    // 4. Dispara Trigger (Física)
     if (hasChanged) {
-      sm.trigger('TriggerDrop')?.fire();
+      _controller!.findInput<SMITrigger>('TriggerDrop')?.fire();
     }
   }
 
@@ -131,11 +136,12 @@ class _LiveCupAnimationState extends State<LiveCupAnimation> {
     return SizedBox(
       height: 400,
       width: double.infinity,
-      child: !_isLoaded || _riveController == null
+      // Usamos o widget 'Rive' padrão que aceita 'fit' e 'artboard'
+      child: !_isLoaded || _riveArtboard == null
           ? const Center(child: CircularProgressIndicator(color: Colors.purple))
-          : RiveWidget(
-              controller: _riveController!,
-              fit: BoxFit.contain,
+          : Rive(
+              artboard: _riveArtboard!,
+              fit: BoxFit.contain, // Agora funciona!
             ),
     );
   }

@@ -12,15 +12,42 @@ import 'features/home/presentation/screens/intro_screen.dart';
 import 'features/cup_builder/presentation/screens/order_wizard_screen.dart'; 
 
 import 'package:flutter/material.dart';
-import 'package:rive/rive.dart'; // Adicione este import
+// import 'package:rive/rive.dart'; // Adicione este import
 
 // ATENÇÃO: Removi o import do cup_builder_screen.dart pois ele não é mais usado!
 
-void main() async { // Transforme em async
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await RiveNative.init(); // <--- INICIALIZAÇÃO OBRIGATÓRIA
+  // RiveNative.init(); // Geralmente necessário apenas em versões específicas ou setups desktop
   runApp(const MyApp());
 }
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Speed Guaraná',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        // Tema base escuro como pedido no projeto
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      // Substitua pela sua tela inicial real, ex: IntroScreen() ou HomeScreen()
+      home: const Scaffold(
+        body: Center(child: Text('Speed Guaraná Iniciado')),
+      ),
+    );
+  }
+}
+
+
 
 // Configuração de Rotas
 final _router = GoRouter(
