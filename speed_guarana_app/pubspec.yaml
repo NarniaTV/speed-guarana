@@ -18,6 +18,8 @@ dependencies:
   # Ícones Padrão
   cupertino_icons: ^1.0.8
 
+  uuid: ^3.0.7
+
   # Gerenciamento de Estado (Essencial para a montagem do copo)
   provider: ^6.0.5
   
