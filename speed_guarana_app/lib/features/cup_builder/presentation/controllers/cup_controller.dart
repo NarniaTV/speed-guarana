@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart'; // Adicione ao pubspec: uuid: ^3.0.7 (ou use DateTime)
 import '../../domain/models/ingredient.dart';
 import '../../domain/models/cup_size.dart';
 import '../../../../core/providers/cart_provider.dart';

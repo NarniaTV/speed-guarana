@@ -4,35 +4,52 @@ import 'package:provider/provider.dart';
 
 // Imports do Core e Temas
 import 'core/theme/app_theme.dart';
-import 'core/providers/cart_provider.dart'; // Importante: Onde mora a sacola
+import 'core/providers/cart_provider.dart'; 
 
-// Imports das Telas
+// Imports das Telas NOVAS (Intro e Wizard)
 import 'features/home/presentation/screens/home_screen.dart';
-import 'features/cup_builder/presentation/screens/cup_builder_screen.dart';
+import 'features/home/presentation/screens/intro_screen.dart'; 
+import 'features/cup_builder/presentation/screens/order_wizard_screen.dart'; 
 
-import 'features/home/presentation/screens/intro_screen.dart'; // Importe a Intro
-import 'features/cup_builder/presentation/screens/order_wizard_screen.dart'; // Importe o Wizard
+import 'package:flutter/material.dart';
+import 'package:rive/rive.dart'; // Adicione este import
 
-void main() {
-  runApp(const SpeedGuaranaApp());
+// ATENÇÃO: Removi o import do cup_builder_screen.dart pois ele não é mais usado!
+
+void main() async { // Transforme em async
+  WidgetsFlutterBinding.ensureInitialized();
+  await RiveNative.init(); // <--- INICIALIZAÇÃO OBRIGATÓRIA
+  runApp(const MyApp());
 }
 
 // Configuração de Rotas
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
+    // 1. Menu Principal
     GoRoute(
       path: '/',
       builder: (context, state) => const HomeScreen(),
     ),
-    // Nova Rota para o fluxo rápido (Chamaremos da Home se o cliente clicar em algo específico ou pode substituir o /builder)
+    
+    // 2. Abertura Cinematográfica
     GoRoute(
       path: '/intro',
       builder: (context, state) => const IntroScreen(),
     ),
+
+    // 3. O Mágico de Pedidos (Wizard)
     GoRoute(
       path: '/wizard',
       builder: (context, state) => const OrderWizardScreen(),
+    ),
+
+    // --- CORREÇÃO DO ERRO ---
+    // Mantemos a rota '/builder' para não quebrar o botão antigo da Home,
+    // mas redirecionamos ela para a Intro (experiência nova).
+    GoRoute(
+      path: '/builder',
+      builder: (context, state) => const IntroScreen(), 
     ),
   ],
 );
@@ -42,15 +59,15 @@ class SpeedGuaranaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MultiProvider: Injeta a Sacola (CartProvider) no app inteiro
     return MultiProvider(
       providers: [
+        // Injeta a Sacola no app inteiro
         ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: MaterialApp.router(
         title: 'Speed Guaraná',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme, // Nosso tema Dark/Glass
+        theme: AppTheme.darkTheme, 
         routerConfig: _router,
       ),
     );
