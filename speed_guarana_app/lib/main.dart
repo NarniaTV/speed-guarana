@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 
+// ADICIONE ESTA LINHA AQUI:
+import 'features/cup_builder/presentation/screens/cup_builder_screen.dart';
+
 void main() {
   runApp(const SpeedGuaranaApp());
 }
@@ -16,10 +19,11 @@ final _router = GoRouter(
       path: '/',
       builder: (context, state) => const HomeScreen(),
     ),
-    // Futuras rotas:
-    // /client/builder
-    // /waiter/pos
-    // /admin/dashboard
+    // Nova Rota Adicionada:
+    GoRoute(
+      path: '/builder',
+      builder: (context, state) => const CupBuilderScreen(),
+    ),
   ],
 );
 

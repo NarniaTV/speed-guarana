@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart'; // Importante para o context.go
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/ui/widgets/glass_card.dart';
 
@@ -37,7 +38,7 @@ class HomeScreen extends StatelessWidget {
 
                 const Spacer(),
 
-                // Menu de Módulos (Simulação)
+                // --- MÓDULO CLIENTE ---
                 _buildModuleCard(
                   context,
                   title: "Sou Cliente",
@@ -45,8 +46,12 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.local_drink_rounded,
                   color: AppColors.acaiPurple,
                   delay: 400,
+                  // Rota de navegação
+                  routePath: '/builder',
                 ),
                 const SizedBox(height: 16),
+
+                // --- MÓDULO GARÇOM ---
                 _buildModuleCard(
                   context,
                   title: "Garçom / Balcão",
@@ -54,8 +59,11 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.point_of_sale,
                   color: AppColors.guaranaRed,
                   delay: 600,
+                  routePath: null, // Ainda não criado
                 ),
                 const SizedBox(height: 16),
+
+                // --- MÓDULO DONO ---
                 _buildModuleCard(
                   context,
                   title: "Dono / Admin",
@@ -63,10 +71,11 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.dashboard_customize,
                   color: Colors.blueGrey,
                   delay: 800,
+                  routePath: null, // Ainda não criado
                 ),
                 
                 const Spacer(),
-                Center(
+                const Center(
                   child: Text(
                     "v1.0.0 - Powered by Flutter",
                     style: TextStyle(color: Colors.white30, fontSize: 12),
@@ -86,13 +95,22 @@ class HomeScreen extends StatelessWidget {
     required IconData icon,
     required Color color,
     required int delay,
+    String? routePath,
   }) {
     return GlassCard(
       onTap: () {
-        // TODO: Navegar para a rota específica
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Acessando módulo: $title")),
-        );
+        if (routePath != null) {
+          // Navegação real
+          context.go(routePath);
+        } else {
+          // Feedback visual para módulos em construção
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Módulo '$title' em desenvolvimento!"),
+              backgroundColor: Colors.grey,
+            ),
+          );
+        }
       },
       child: Row(
         children: [
