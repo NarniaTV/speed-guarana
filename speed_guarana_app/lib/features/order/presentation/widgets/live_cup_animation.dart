@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:rive/rive.dart';
+import 'package:rive/rive.dart'; //
 
-// 1. IMPORT CORRIGIDO (Caminho relativo correto)
-import '../../../cup_builder/presentation/controllers/wizard_controller.dart';
-import '../../../cup_builder/domain/models/cup_size.dart';
+// Imports do seu projeto
+import '../../cup_builder/presentation/controllers/wizard_controller.dart';
+import '../../cup_builder/';
 
 class LiveCupAnimation extends StatefulWidget {
   final WizardController controller; 
@@ -16,7 +16,6 @@ class LiveCupAnimation extends StatefulWidget {
 }
 
 class _LiveCupAnimationState extends State<LiveCupAnimation> {
-  // Usaremos Artboard e StateMachineController (Padrão robusto)
   Artboard? _riveArtboard;
   StateMachineController? _controller;
   bool _isLoaded = false;
@@ -37,14 +36,12 @@ class _LiveCupAnimationState extends State<LiveCupAnimation> {
 
   Future<void> _initRive() async {
     try {
-      // Carrega os bytes do asset
+      // Carrega o arquivo
       final bytes = await rootBundle.load('assets/rive/cup_v1.riv');
-      
-      // Inicializa o arquivo Rive (Método seguro v0.14+)
       final file = RiveFile.import(bytes);
       final artboard = file.mainArtboard;
       
-      // Cria o controller da State Machine
+      // Conecta a State Machine (Verifique se o nome no Rive é 'MixingState')
       final controller = StateMachineController.fromArtboard(artboard, 'MixingState');
 
       if (controller != null) {
@@ -56,15 +53,15 @@ class _LiveCupAnimationState extends State<LiveCupAnimation> {
         _riveArtboard = artboard;
         _isLoaded = true;
       });
-
-      // Sincroniza o estado inicial
+      
+      // Sincroniza estado inicial
       _onStateChange();
     } catch (e) {
       debugPrint('🚨 RIVE ERROR: $e');
     }
   }
 
-  // Helper para converter IDs (t1 -> 1.0)
+  // Helper: Converte ID do ingrediente (String) para Número do Rive
   double _mapIngredientIdToRive(String id) {
     switch (id) {
       case 'b1': return 1; // Massa Tradicional
@@ -80,18 +77,15 @@ class _LiveCupAnimationState extends State<LiveCupAnimation> {
     if (!_isLoaded || _controller == null) return;
 
     final wizard = widget.controller;
-    
-    // Acessando inputs diretamente pelo nome na State Machine
-    // Isso evita ter que guardar referências de variáveis SMINumber
-    
-    // 1. Atualiza Tamanho
+
+    // 1. Atualiza Tamanho (Input: CupSize)
     final sizeIndex = wizard.tempSize.id.index + 1.0;
     final sizeInput = _controller!.findInput<SMINumber>('CupSize');
     if (sizeInput != null && sizeInput.value != sizeIndex) {
       sizeInput.value = sizeIndex;
     }
 
-    // 2. Atualiza Base
+    // 2. Atualiza Base (Input: BaseType)
     final baseId = wizard.tempBase?.id;
     final baseVal = baseId != null ? _mapIngredientIdToRive(baseId) : 0.0;
     final baseInput = _controller!.findInput<SMINumber>('BaseType');
@@ -125,7 +119,7 @@ class _LiveCupAnimationState extends State<LiveCupAnimation> {
       hasChanged = true;
     }
 
-    // 4. Dispara Trigger (Física)
+    // 4. Dispara Trigger de Física
     if (hasChanged) {
       _controller!.findInput<SMITrigger>('TriggerDrop')?.fire();
     }
@@ -136,12 +130,11 @@ class _LiveCupAnimationState extends State<LiveCupAnimation> {
     return SizedBox(
       height: 400,
       width: double.infinity,
-      // Usamos o widget 'Rive' padrão que aceita 'fit' e 'artboard'
       child: !_isLoaded || _riveArtboard == null
           ? const Center(child: CircularProgressIndicator(color: Colors.purple))
           : Rive(
               artboard: _riveArtboard!,
-              fit: BoxFit.contain, // Agora funciona!
+              fit: BoxFit.contain,
             ),
     );
   }
