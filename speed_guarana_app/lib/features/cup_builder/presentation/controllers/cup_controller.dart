@@ -1,40 +1,59 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/ingredient.dart';
+import '../../domain/models/cup_size.dart';
 
 class CupController extends ChangeNotifier {
-  // Lista de camadas do copo (do fundo para o topo)
-  final List<Ingredient> _layers = [];
-  
-  double _totalPrice = 15.00; // Preço base do copo vazio (ex: 500ml)
+  // Estado
+  CupSize _selectedSize = mockCupSizes[1]; // Começa com 500ml selecionado
+  final Map<Ingredient, int> _selectedIngredients = {}; // Ingrediente -> Quantidade
 
-  List<Ingredient> get layers => List.unmodifiable(_layers);
-  double get totalPrice => _totalPrice;
-  
-  // Limite de camadas para não transbordar o copo
-  static const int maxLayers = 8; 
+  // Getters
+  CupSize get selectedSize => _selectedSize;
+  Map<Ingredient, int> get selectedIngredients => Map.unmodifiable(_selectedIngredients);
 
-  void addLayer(Ingredient ingredient) {
-    if (_layers.length >= maxLayers) {
-      // Aqui poderíamos emitir um erro/aviso, mas por hora só ignoramos
-      return;
-    }
-    
-    _layers.add(ingredient);
-    _totalPrice += ingredient.price;
-    notifyListeners(); // Avisa a UI para redesenhar
+  double get totalPrice {
+    double total = _selectedSize.basePrice;
+    _selectedIngredients.forEach((ingredient, quantity) {
+      total += (ingredient.price * quantity);
+    });
+    return total;
   }
 
-  void removeLastLayer() {
-    if (_layers.isNotEmpty) {
-      final removed = _layers.removeLast();
-      _totalPrice -= removed.price;
+  // Actions
+  void selectSize(CupSize size) {
+    _selectedSize = size;
+    notifyListeners();
+  }
+
+  void incrementIngredient(Ingredient ingredient) {
+    // Regra de Negócio: Se for Base (Massa), só pode ter 1 (ou substitui). 
+    // Aqui vamos simplificar: Pode misturar.
+    
+    if (_selectedIngredients.containsKey(ingredient)) {
+      _selectedIngredients[ingredient] = _selectedIngredients[ingredient]! + 1;
+    } else {
+      _selectedIngredients[ingredient] = 1;
+    }
+    notifyListeners();
+  }
+
+  void decrementIngredient(Ingredient ingredient) {
+    if (_selectedIngredients.containsKey(ingredient) && _selectedIngredients[ingredient]! > 0) {
+      _selectedIngredients[ingredient] = _selectedIngredients[ingredient]! - 1;
+      if (_selectedIngredients[ingredient] == 0) {
+        _selectedIngredients.remove(ingredient);
+      }
       notifyListeners();
     }
   }
+  
+  int getQuantity(Ingredient ingredient) {
+    return _selectedIngredients[ingredient] ?? 0;
+  }
 
-  void resetCup() {
-    _layers.clear();
-    _totalPrice = 15.00; // Reseta para o preço base
+  void reset() {
+    _selectedSize = mockCupSizes[1];
+    _selectedIngredients.clear();
     notifyListeners();
   }
 }
