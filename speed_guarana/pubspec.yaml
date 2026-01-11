@@ -40,5 +40,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # assets:
-  #   - assets/animations/  <-- Lembre-se de descomentar isso quando tiver o arquivo .riv
+  assets:
+    - assets/animations/
+    - assets/icons/
