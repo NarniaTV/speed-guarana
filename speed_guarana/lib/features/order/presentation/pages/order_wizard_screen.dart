@@ -16,7 +16,7 @@ class OrderWizardScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Premium
+          // Background Gradient
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -30,7 +30,7 @@ class OrderWizardScreen extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-                // 1. Header (Steps & Price)
+                // Header
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: Row(
@@ -50,113 +50,93 @@ class OrderWizardScreen extends StatelessWidget {
                   ),
                 ),
 
-                // 2. Área do Copo (Rive)
+                // Conteúdo Principal
                 Expanded(
-                  flex: 4,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      LiveCupWidget(controller: controller),
-                      if (state.selectedFlavor == null)
-                        const Positioned(
-                          bottom: 20,
-                          child: Text("Selecione um sabor para começar", style: TextStyle(color: Colors.white38)),
-                        ),
-                    ],
-                  ),
-                ),
-
-                // 3. Área de Seleção (Wizard Dinâmico)
-                Expanded(
-                  flex: 5,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1E1E1E),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                      boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 20, offset: Offset(0, -5))],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Título do Passo
-                        Text(
-                          controller.stepTitle, 
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Grid de Itens
-                        Expanded(
-                          child: state.isLoading
-                              ? const Center(child: CircularProgressIndicator(color: AppColors.neonGreen))
-                              : GridView.builder(
-                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3,
-                                    childAspectRatio: 0.8,
-                                    crossAxisSpacing: 12, mainAxisSpacing: 12,
-                                  ),
-                                  itemCount: controller.currentStepItems.length,
-                                  itemBuilder: (context, index) {
-                                    final item = controller.currentStepItems[index];
-                                    final isSelected = _isItemSelected(state, item);
-                                    
-                                    return _IngredientCard(
-                                      ingredient: item,
-                                      isSelected: isSelected,
-                                      onTap: () => controller.selectItem(item),
-                                    );
-                                  },
-                                ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Botões de Navegação
-                        Row(
-                          children: [
-                            if (state.currentStep != OrderStep.flavor)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: IconButton(
-                                  onPressed: controller.previousStep,
-                                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                                  style: IconButton.styleFrom(backgroundColor: Colors.white10),
-                                ),
-                              ),
-                            Expanded(
-                              child: SizedBox(
-                                height: 56,
-                                child: ElevatedButton(
-                                  onPressed: _canProceed(state) ? controller.nextStep : null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.neonGreen,
-                                    disabledBackgroundColor: Colors.white10,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                  ),
-                                  child: Text(
-                                    state.currentStep == OrderStep.review ? "FINALIZAR PEDIDO" : "PRÓXIMO",
-                                    style: TextStyle(
-                                      fontSize: 16, 
-                                      fontWeight: FontWeight.bold,
-                                      color: _canProceed(state) ? Colors.black : Colors.white24
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: state.currentStep == OrderStep.review 
+                    ? _ReviewStep(controller: controller) // Tela de Revisão
+                    : _SelectionStep(controller: controller), // Tela de Seleção Normal
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+// --- Tela de Seleção (Passos 1, 2, 3) ---
+class _SelectionStep extends StatelessWidget {
+  final WizardController controller;
+  const _SelectionStep({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = controller.state;
+    return Column(
+      children: [
+        // Copo Vivo (Rive)
+        Expanded(
+          flex: 4,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              LiveCupWidget(controller: controller),
+              if (state.selectedFlavor == null)
+                const Positioned(
+                  bottom: 20,
+                  child: Text("Comece escolhendo o tamanho", style: TextStyle(color: Colors.white38)),
+                ),
+            ],
+          ),
+        ),
+
+        // Menu de Opções
+        Expanded(
+          flex: 5,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 20, offset: Offset(0, -5))],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(controller.stepTitle, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 16),
+                
+                Expanded(
+                  child: state.isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.neonGreen))
+                    : GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          childAspectRatio: 0.8,
+                          crossAxisSpacing: 12, mainAxisSpacing: 12,
+                        ),
+                        itemCount: controller.currentStepItems.length,
+                        itemBuilder: (context, index) {
+                          final item = controller.currentStepItems[index];
+                          final isSelected = _isItemSelected(state, item);
+                          return _IngredientCard(
+                            ingredient: item,
+                            isSelected: isSelected,
+                            onTap: () => controller.selectItem(item),
+                          );
+                        },
+                      ),
+                ),
+                
+                const SizedBox(height: 16),
+                _NavigationButtons(controller: controller),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -166,19 +146,153 @@ class OrderWizardScreen extends StatelessWidget {
     if (item.type == IngredientType.topping) return state.selectedToppings.contains(item);
     return false;
   }
+}
 
-  bool _canProceed(WizardState state) {
-    if (state.currentStep == OrderStep.flavor) return state.selectedFlavor != null;
-    return true; // Complementos e Coberturas são opcionais? Se sim, true.
+// --- Tela de Revisão (Passo 4 - Novo!) ---
+class _ReviewStep extends StatelessWidget {
+  final WizardController controller;
+  const _ReviewStep({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = controller.state;
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Resumo do Pedido", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 30),
+          
+          // Lista de Itens
+          _SummaryRow(label: "Base", item: state.selectedFlavor),
+          const Divider(color: Colors.white10),
+          ...state.selectedComplements.map((i) => _SummaryRow(label: "Add", item: i)),
+          ...state.selectedToppings.map((i) => _SummaryRow(label: "Cob", item: i)),
+          
+          const Spacer(),
+          const Divider(color: Colors.white24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("TOTAL", style: TextStyle(fontSize: 18, color: Colors.white70)),
+              Text("R\$ ${state.totalPrice.toStringAsFixed(2)}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.neonGreen)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Botões Finais
+          Row(
+            children: [
+              IconButton(
+                onPressed: controller.previousStep,
+                icon: const Icon(Icons.edit, color: Colors.white),
+                style: IconButton.styleFrom(backgroundColor: Colors.white10),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () => controller.finishOrder(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.neonGreen,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: const Text("ENVIAR PEDIDO", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
-// --- Widgets Auxiliares ---
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final Ingredient? item;
+  const _SummaryRow({required this.label, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    if (item == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text("$label: ${item!.name}", style: const TextStyle(color: Colors.white70, fontSize: 16)),
+          ),
+          Text("R\$ ${item!.price.toStringAsFixed(2)}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+// --- Widgets Comuns ---
+
+class _NavigationButtons extends StatelessWidget {
+  final WizardController controller;
+  const _NavigationButtons({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = controller.state;
+    return Row(
+      children: [
+        if (state.currentStep != OrderStep.flavor)
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: IconButton(
+              onPressed: controller.previousStep,
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              style: IconButton.styleFrom(backgroundColor: Colors.white10),
+            ),
+          ),
+        Expanded(
+          child: SizedBox(
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _canProceed(state) ? controller.nextStep : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.neonGreen,
+                disabledBackgroundColor: Colors.white10,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Text(
+                "PRÓXIMO",
+                style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold,
+                  color: _canProceed(state) ? Colors.black : Colors.white24
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _canProceed(WizardState state) {
+    if (state.currentStep == OrderStep.flavor) return state.selectedFlavor != null;
+    return true; 
+  }
+}
 
 class _StepIndicator extends StatelessWidget {
   final OrderStep currentStep;
   const _StepIndicator({required this.currentStep});
-
   @override
   Widget build(BuildContext context) {
     int stepIndex = currentStep.index;
@@ -188,12 +302,8 @@ class _StepIndicator extends StatelessWidget {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           margin: const EdgeInsets.symmetric(horizontal: 2),
-          width: isActive ? 24 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.neonGreen : Colors.white10,
-            borderRadius: BorderRadius.circular(4),
-          ),
+          width: isActive ? 24 : 8, height: 8,
+          decoration: BoxDecoration(color: isActive ? AppColors.neonGreen : Colors.white10, borderRadius: BorderRadius.circular(4)),
         );
       }),
     );
@@ -204,7 +314,6 @@ class _IngredientCard extends StatelessWidget {
   final Ingredient ingredient;
   final bool isSelected;
   final VoidCallback onTap;
-
   const _IngredientCard({required this.ingredient, required this.isSelected, required this.onTap});
 
   @override
@@ -216,54 +325,21 @@ class _IngredientCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? AppColors.neonGreen.withOpacity(0.15) : AppColors.surfaceDark,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColors.neonGreen : Colors.white10,
-            width: isSelected ? 2 : 1,
-          ),
+          border: Border.all(color: isSelected ? AppColors.neonGreen : Colors.white10, width: isSelected ? 2 : 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container( // Placeholder do Ícone
-              height: 40, width: 40,
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.neonGreen : Colors.white10,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _getIconForType(ingredient.type), 
-                color: isSelected ? Colors.black : Colors.white54
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              ingredient.name,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey[400],
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 4),
-            if (ingredient.price > 0)
-              Text(
-                "+ R\$ ${ingredient.price.toStringAsFixed(2)}",
-                style: const TextStyle(color: AppColors.neonGreen, fontSize: 11),
-              ),
+            Icon(_getIcon(ingredient.type), color: isSelected ? Colors.black : Colors.white54, size: 30),
+            const SizedBox(height: 8),
+            Text(ingredient.name, textAlign: TextAlign.center, style: TextStyle(color: isSelected ? Colors.white : Colors.grey[400], fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            Text("R\$ ${ingredient.price.toStringAsFixed(2)}", style: const TextStyle(color: AppColors.neonGreen, fontSize: 11)),
           ],
         ),
       ),
     );
   }
-
-  IconData _getIconForType(IngredientType type) {
-    switch (type) {
-      case IngredientType.flavor: return Icons.local_drink;
-      case IngredientType.complement: return Icons.cookie;
-      case IngredientType.topping: return Icons.water_drop;
-    }
-  }
+  IconData _getIcon(IngredientType type) => type == IngredientType.flavor ? Icons.local_drink : (type == IngredientType.complement ? Icons.cookie : Icons.water_drop);
 }
 
 class _GlassBadge extends StatelessWidget {
@@ -273,11 +349,7 @@ class _GlassBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
-      ),
+      decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
       child: child,
     );
   }

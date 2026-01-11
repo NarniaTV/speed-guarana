@@ -27,12 +27,12 @@ class _LiveCupWidgetState extends State<LiveCupWidget> {
   void initState() {
     super.initState();
     _loadRiveFile();
+    // Ouve as mudanças do Controller
     widget.controller.addListener(_syncRiveWithController);
   }
 
   Future<void> _loadRiveFile() async {
     try {
-      // Tenta carregar. Se falhar (arquivo não existe ainda), captura o erro.
       final data = await rootBundle.load('assets/animations/speed_cup_v1.riv');
       final file = RiveFile.import(data);
       final artboard = file.mainArtboard;
@@ -44,7 +44,7 @@ class _LiveCupWidgetState extends State<LiveCupWidget> {
       }
       setState(() => _riveArtboard = artboard);
     } catch (e) {
-      debugPrint('Rive Asset ainda não encontrado. Mostrando placeholder.');
+      debugPrint('Rive Asset ainda não encontrado (Ignorar se for o primeiro run).');
     }
   }
 
@@ -59,22 +59,29 @@ class _LiveCupWidgetState extends State<LiveCupWidget> {
 
   void _syncRiveWithController() {
     if (_controller == null) return;
-    final state = widget.controller.value;
+    
+    // CORREÇÃO AQUI: Usando .state em vez de .value
+    final state = widget.controller.state; 
 
-    if (_cupSizeInput?.value != state.sizeIndex.toDouble()) {
-       _cupSizeInput?.value = state.sizeIndex.toDouble();
-    }
+    // Sincroniza Tamanho (se tivermos essa lógica no futuro)
+    // if (_cupSizeInput?.value != state.sizeIndex.toDouble()) { ... }
 
-    if (state.selectedToppings.isNotEmpty) {
-      double t1 = state.selectedToppings[0].id.toDouble();
+    // Agrupa todos os itens visuais (Complementos + Coberturas) para jogar nos Slots
+    // O Sabor (Flavor) muda a cor base (implementaremos depois), aqui focamos nos "sólidos"
+    final visualItems = [...state.selectedComplements, ...state.selectedToppings];
+
+    // Lógica do Slot 1 (Primeiro item adicionado)
+    if (visualItems.isNotEmpty) {
+      double t1 = visualItems[0].id.toDouble();
       if (_slot1IdInput?.value != t1) {
         _slot1IdInput?.value = t1;
         _slot1AddTrigger?.fire();
       }
     }
 
-    if (state.selectedToppings.length > 1) {
-      double t2 = state.selectedToppings[1].id.toDouble();
+    // Lógica do Slot 2 (Segundo item adicionado - cai por cima)
+    if (visualItems.length > 1) {
+      double t2 = visualItems[1].id.toDouble();
       if (_slot2IdInput?.value != t2) {
         _slot2IdInput?.value = t2;
         _slot2AddTrigger?.fire();
@@ -92,9 +99,12 @@ class _LiveCupWidgetState extends State<LiveCupWidget> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.local_drink, size: 50, color: Colors.white24),
+                  Icon(Icons.local_drink, size: 60, color: Colors.white.withOpacity(0.1)),
                   const SizedBox(height: 10),
-                  const Text("Copo em Construção", style: TextStyle(color: Colors.white24)),
+                  Text(
+                    "Copo Vivo Carregando...", 
+                    style: TextStyle(color: Colors.white.withOpacity(0.3)),
+                  ),
                 ],
               ),
             )
