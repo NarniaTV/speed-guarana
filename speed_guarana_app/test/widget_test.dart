@@ -1,30 +1,19 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:speed_guarana_app/main.dart';
+import 'package:speed_guarana_app/main.dart'; // Importa nosso main atualizado
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Smoke test - App inicia na tela correta', (WidgetTester tester) async {
+    // 1. Carrega o nosso app (Note que agora chamamos SpeedGuaranaApp e não MyApp)
+    await tester.pumpWidget(const SpeedGuaranaApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // 2. Aguarda as animações iniciais (já que usamos flutter_animate)
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
+    // 3. Verifica se o texto "SPEED" ou parte do título está na tela
+    // O find.textContaining ajuda quando há quebras de linha (\n)
+    expect(find.textContaining('SPEED'), findsOneWidget);
+    
+    // Verifica se NÃO tem nenhum contador "0" na tela (garante que limpamos o código antigo)
     expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
   });
 }
