@@ -68,8 +68,8 @@ class _Realistic3DCupPainter extends CustomPainter {
     final centerX = w / 2;
     
     // Configuração da Perspectiva (O quanto a boca do copo é aberta)
-    final double perspective = 0.15; // 15% de achatamento nas elipses
-    final double bottomScale = 0.65; // Base é 65% do topo
+    const double perspective = 0.15; // 15% de achatamento nas elipses
+    const double bottomScale = 0.65; // Base é 65% do topo
 
     // 1. DESENHAR O CORPO DO COPO (VIDRO TRÁS)
     final pathGlass = Path();

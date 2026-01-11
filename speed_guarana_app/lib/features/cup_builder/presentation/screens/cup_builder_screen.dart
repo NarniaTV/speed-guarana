@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/ui/widgets/glass_card.dart';
+import '../../../../core/providers/cart_provider.dart'; // Importe o Provider
 import '../../domain/models/ingredient.dart';
 import '../../domain/models/cup_size.dart';
 import '../controllers/cup_controller.dart';
@@ -13,6 +14,7 @@ class CupBuilderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Injetamos o Controller LOCAL para a montagem
     return ChangeNotifierProvider(
       create: (_) => CupController(),
       child: const _CupBuilderContent(),
@@ -31,65 +33,50 @@ class _CupBuilderContent extends StatelessWidget {
       backgroundColor: AppColors.backgroundDark,
       body: Stack(
         children: [
-          // Fundo com Gradiente Sutil
+          // Fundo
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF2E004F), Colors.black],
-                  stops: [0.0, 0.4],
+                  colors: [Color(0xFF1A0524), Colors.black],
                 ),
               ),
             ),
           ),
 
-          // Conteúdo com Rolagem (Slivers)
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // 1. App Bar Expansível
+              // --- APP BAR ---
               SliverAppBar(
                 backgroundColor: AppColors.backgroundDark.withOpacity(0.9),
-                expandedHeight: 120.0,
+                expandedHeight: 100.0,
                 pinned: true,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
                   onPressed: () => context.go('/'),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
-                  title: const Text(
-                    "Monte seu Guaraná",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  centerTitle: false,
-                  titlePadding: const EdgeInsets.only(left: 60, bottom: 16),
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
+                  title: const Text("Monte do seu jeito"),
+                  centerTitle: true,
+                  titlePadding: const EdgeInsets.only(bottom: 16),
+                  background: Container(color: Colors.black26),
                 ),
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.delete_sweep_outlined, color: Colors.white70),
+                    icon: const Icon(Icons.refresh, color: AppColors.guaranaRed),
                     onPressed: controller.reset,
                   )
                 ],
               ),
 
-              // 2. Título da Seção: Tamanho
-              _buildSectionHeader(context, "1. Escolha o Tamanho"),
-
-              // 3. Seletor de Tamanhos (Cards Horizontais)
+              // --- 1. TAMANHO ---
+              _buildSectionHeader(context, "1. Qual o tamanho da fome?"),
               SliverToBoxAdapter(
                 child: Container(
-                  height: 140,
+                  height: 120,
                   margin: const EdgeInsets.only(bottom: 20),
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -107,54 +94,93 @@ class _CupBuilderContent extends StatelessWidget {
                 ),
               ),
 
-              // 4. Título da Seção: Bases
-              _buildSectionHeader(context, "2. Escolha a Base"),
-
-              // 5. Lista de Bases
+              // --- 2. BASE (Max 1) ---
+              _buildSectionHeader(context, "2. Escolha a Base (Obrigatório)"),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final ingredient = mockBases[index];
-                    return _buildIngredientTile(context, ingredient, controller);
+                    final isSelected = controller.selectedBase?.id == ingredient.id;
+                    return _buildSelectionTile(
+                      context: context,
+                      ingredient: ingredient,
+                      isSelected: isSelected,
+                      onTap: () => controller.selectBase(ingredient),
+                      type: 'radio',
+                    );
                   },
                   childCount: mockBases.length,
                 ),
               ),
 
-              // 6. Título da Seção: Crocantes & Adicionais
-              _buildSectionHeader(context, "3. Turbinar (Crocantes)"),
-
-              // 7. Lista de Adicionais
+              // --- 3. CROCANTES (Max 2) ---
+              _buildSectionHeader(
+                context, 
+                "3. Crocantes (Máx 2)", 
+                subtitle: "${controller.selectedToppings.length}/2 selecionados"
+              ),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final ingredient = mockToppings[index];
-                    return _buildIngredientTile(context, ingredient, controller);
+                    final isSelected = controller.selectedToppings.contains(ingredient);
+                    // Desabilita se já tem 2 e este não está selecionado
+                    final isDisabled = !isSelected && controller.selectedToppings.length >= 2;
+
+                    return _buildSelectionTile(
+                      context: context,
+                      ingredient: ingredient,
+                      isSelected: isSelected,
+                      isDisabled: isDisabled,
+                      onTap: () {
+                        if (!isDisabled) controller.toggleTopping(ingredient);
+                      },
+                      type: 'checkbox',
+                    );
                   },
                   childCount: mockToppings.length,
                 ),
               ),
 
-               // 8. Título da Seção: Cobertura
-              _buildSectionHeader(context, "4. Finalizar (Cobertura)"),
-
-              // 9. Lista de Coberturas
+              // --- 4. COBERTURA (Max 1) ---
+              _buildSectionHeader(context, "4. Finalizar com Cobertura"),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final ingredient = mockSyrups[index];
-                    return _buildIngredientTile(context, ingredient, controller);
+                    final isSelected = controller.selectedSyrup?.id == ingredient.id;
+                    return _buildSelectionTile(
+                      context: context,
+                      ingredient: ingredient,
+                      isSelected: isSelected,
+                      onTap: () => controller.toggleSyrup(ingredient),
+                      type: 'radio',
+                    );
                   },
                   childCount: mockSyrups.length,
                 ),
               ),
 
-              // Espaço extra para não esconder conteúdo atrás da Bottom Bar
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              // --- 5. UTENSÍLIOS ---
+              _buildSectionHeader(context, "5. Como vai tomar?"),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildUtensilOption(context, "Colher", Icons.soup_kitchen, controller)),
+                      const SizedBox(width: 15),
+                      Expanded(child: _buildUtensilOption(context, "Canudo", Icons.local_drink, controller)),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 140)), // Espaço fundo
             ],
           ),
 
-          // Bottom Bar Flutuante (Checkout)
+          // --- BOTTOM BAR ---
           Positioned(
             bottom: 0,
             left: 0,
@@ -166,17 +192,19 @@ class _CupBuilderContent extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  // --- WIDGETS AUXILIARES ---
+
+  Widget _buildSectionHeader(BuildContext context, String title, {String? subtitle}) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 15),
-        child: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            if (subtitle != null)
+              Text(subtitle, style: const TextStyle(color: AppColors.neonGreen, fontSize: 12)),
+          ],
         ),
       ),
     );
@@ -187,32 +215,87 @@ class _CupBuilderContent extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: 200.ms,
-        width: 110,
+        width: 100,
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.acaiPurple : Colors.white.withOpacity(0.05),
+          color: isSelected ? AppColors.acaiPurple.withOpacity(0.8) : Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.neonGreen : Colors.white10,
+            color: isSelected ? AppColors.neonGreen : Colors.white12,
             width: isSelected ? 2 : 1,
           ),
         ),
-        padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Text(size.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 5),
+            Text("R\$ ${size.basePrice.toStringAsFixed(0)}", style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectionTile({
+    required BuildContext context,
+    required Ingredient ingredient,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required String type,
+    bool isDisabled = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: 200.ms,
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          // MUDANÇA DE FUNDO AO SELECIONAR
+          color: isSelected 
+              ? AppColors.acaiPurple.withOpacity(0.3) 
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? AppColors.neonGreen 
+                : Colors.white10,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Bolinha de Cor
+            Container(
+              width: 12, height: 12,
+              decoration: BoxDecoration(
+                color: ingredient.colorPrimary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Text(
+                ingredient.name,
+                style: TextStyle(
+                  color: isDisabled ? Colors.white30 : Colors.white,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+            if (ingredient.price > 0)
+              Text(
+                "+ R\$ ${ingredient.price.toStringAsFixed(2)}",
+                style: TextStyle(color: isSelected ? AppColors.neonGreen : Colors.white54, fontSize: 12),
+              ),
+            const SizedBox(width: 10),
+            
+            // Checkbox ou Radio Visual
             Icon(
-              Icons.local_drink_rounded, 
-              size: 32, 
-              color: isSelected ? Colors.white : Colors.white30
-            ),
-            const SizedBox(height: 8),
-            Text(
-              size.label,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            Text(
-              "R\$ ${size.basePrice.toStringAsFixed(2)}",
-              style: TextStyle(color: isSelected ? AppColors.neonGreen : Colors.white70, fontSize: 12),
+              isSelected 
+                  ? (type == 'radio' ? Icons.radio_button_checked : Icons.check_circle)
+                  : (type == 'radio' ? Icons.radio_button_unchecked : Icons.circle_outlined),
+              color: isSelected ? AppColors.neonGreen : (isDisabled ? Colors.white10 : Colors.white30),
             ),
           ],
         ),
@@ -220,82 +303,23 @@ class _CupBuilderContent extends StatelessWidget {
     );
   }
 
-  Widget _buildIngredientTile(BuildContext context, Ingredient ingredient, CupController controller) {
-    final quantity = controller.getQuantity(ingredient);
-    final isSelected = quantity > 0;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      child: GlassCard(
-        opacity: 0.05,
-        blur: 10,
-        padding: const EdgeInsets.all(12),
-        child: Row(
+  Widget _buildUtensilOption(BuildContext context, String label, IconData icon, CupController controller) {
+    final isSelected = controller.selectedUtensil == label;
+    return GestureDetector(
+      onTap: () => controller.setUtensil(label),
+      child: AnimatedContainer(
+        duration: 200.ms,
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.neonGreen.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? AppColors.neonGreen : Colors.white10),
+        ),
+        child: Column(
           children: [
-            // Ícone/Cor do Ingrediente
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: ingredient.colorPrimary.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: ingredient.colorPrimary.withOpacity(0.5)),
-              ),
-              child: Icon(Icons.fastfood, color: ingredient.colorPrimary, size: 20),
-            ),
-            const SizedBox(width: 15),
-            
-            // Textos
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    ingredient.name,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
-                  Text(
-                    ingredient.price == 0 ? "Grátis" : "+ R\$ ${ingredient.price.toStringAsFixed(2)}",
-                    style: const TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-
-            // Controles de Quantidade
-            if (!isSelected)
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline, color: Colors.white54),
-                onPressed: () => controller.incrementIngredient(ingredient),
-              )
-            else
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.neonGreen.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.neonGreen.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove, size: 18, color: Colors.white),
-                      onPressed: () => controller.decrementIngredient(ingredient),
-                      constraints: const BoxConstraints(minWidth: 35, minHeight: 35),
-                      padding: EdgeInsets.zero,
-                    ),
-                    Text(
-                      "$quantity",
-                      style: const TextStyle(color: AppColors.neonGreen, fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add, size: 18, color: Colors.white),
-                      onPressed: () => controller.incrementIngredient(ingredient),
-                      constraints: const BoxConstraints(minWidth: 35, minHeight: 35),
-                      padding: EdgeInsets.zero,
-                    ),
-                  ],
-                ),
-              ).animate().fadeIn().scale(),
+            Icon(icon, color: isSelected ? AppColors.neonGreen : Colors.white54),
+            const SizedBox(height: 5),
+            Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -303,51 +327,100 @@ class _CupBuilderContent extends StatelessWidget {
   }
 
   Widget _buildBottomBar(BuildContext context, CupController controller) {
+    final bool isValid = controller.selectedBase != null;
+
     return GlassCard(
       blur: 20,
-      opacity: 0.9, // Mais opaco para dar leitura
-      padding: const EdgeInsets.all(20),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text("Total a pagar", style: TextStyle(color: Colors.black54, fontSize: 12)),
-                Text(
-                  "R\$ ${controller.totalPrice.toStringAsFixed(2)}",
-                  style: const TextStyle(
-                    color: AppColors.acaiPurple,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+      opacity: 0.95,
+      padding: const EdgeInsets.fromLTRB(20, 15, 20, 30),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // CONTROLE DE QUANTIDADE DO COPO
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text("Quantidade:", style: TextStyle(color: Colors.white70)),
+              const SizedBox(width: 15),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(25),
                 ),
-              ],
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  // Ação de adicionar
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Adicionado à sacola!")),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.acaiPurple,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  "ADICIONAR", 
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove, color: Colors.white),
+                      onPressed: controller.decrementQuantity,
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        "${controller.cupQuantity}",
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add, color: AppColors.neonGreen),
+                      onPressed: controller.incrementQuantity,
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 15),
+
+          // BOTÃO ADICIONAR E TOTAL
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Total", style: TextStyle(color: Colors.black54, fontSize: 12)),
+                    Text(
+                      "R\$ ${controller.totalPrice.toStringAsFixed(2)}",
+                      style: const TextStyle(color: AppColors.acaiPurple, fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: isValid ? () {
+                    final item = controller.buildCartItem();
+                    if (item != null) {
+                      // Adiciona ao Carrinho Global
+                      context.read<CartProvider>().addItem(item);
+                      
+                      // Feedback e Volta
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Adicionado à sacola com sucesso!"),
+                          backgroundColor: AppColors.neonGreen,
+                          behavior: SnackBarBehavior.floating,
+                        )
+                      );
+                      context.pop(); // Volta para Home
+                    }
+                  } : null, // Desabilitado se não tiver base
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isValid ? AppColors.acaiPurple : Colors.grey,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    isValid ? "ADICIONAR À SACOLA" : "ESCOLHA A BASE",
+                    style: TextStyle(color: isValid ? Colors.white : Colors.white30, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

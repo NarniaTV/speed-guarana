@@ -4,8 +4,11 @@ publish_to: 'none'
 
 version: 1.0.0+1
 
+
+
 environment:
   sdk: ^3.10.3
+  
 
 # --- BLOCO DE DEPENDÊNCIAS UNIFICADO ---
 dependencies:
@@ -31,6 +34,7 @@ dependencies:
   # Funcionalidades Específicas
   qr_flutter: ^4.1.0 
   mobile_scanner: ^3.2.0
+  uuid: ^4.5.2
 
 dev_dependencies:
   flutter_test:
@@ -39,3 +43,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  

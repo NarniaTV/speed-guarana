@@ -1,25 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'core/theme/app_theme.dart';
-import 'features/home/presentation/screens/home_screen.dart';
 
-// ADICIONE ESTA LINHA AQUI:
+// Imports do Core e Temas
+import 'core/theme/app_theme.dart';
+import 'core/providers/cart_provider.dart'; // Importante: Onde mora a sacola
+
+// Imports das Telas
+import 'features/home/presentation/screens/home_screen.dart';
 import 'features/cup_builder/presentation/screens/cup_builder_screen.dart';
 
 void main() {
   runApp(const SpeedGuaranaApp());
 }
 
-// Configuração de Rotas Simples (Por enquanto)
+// Configuração de Rotas
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
+    // Rota Inicial (Menu)
     GoRoute(
       path: '/',
       builder: (context, state) => const HomeScreen(),
     ),
-    // Nova Rota Adicionada:
+    // Rota de Montagem (Módulo Cliente)
     GoRoute(
       path: '/builder',
       builder: (context, state) => const CupBuilderScreen(),
@@ -32,11 +36,10 @@ class SpeedGuaranaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos MultiProvider aqui já prevendo a expansão do App
+    // MultiProvider: Injeta a Sacola (CartProvider) no app inteiro
     return MultiProvider(
       providers: [
-        // Futuro: CartProvider(), AuthProvider(), etc.
-        Provider(create: (_) => "Estado Inicial"), 
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: MaterialApp.router(
         title: 'Speed Guaraná',
