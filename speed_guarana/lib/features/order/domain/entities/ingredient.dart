@@ -1,7 +1,7 @@
 class Ingredient {
   final int id;
   final String name;
-  final String assetPath; // Para mostrar ícones na lista depois
+  final String assetPath; 
   final double price;
 
   Ingredient({

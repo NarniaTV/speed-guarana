@@ -31,9 +31,8 @@ class _LiveCupWidgetState extends State<LiveCupWidget> {
   }
 
   Future<void> _loadRiveFile() async {
-    // ATENÇÃO: Certifique-se de ter o arquivo em assets/animations/speed_cup_v1.riv
-    // Se não tiver ainda, o código vai tratar o erro suavemente.
     try {
+      // Tenta carregar. Se falhar (arquivo não existe ainda), captura o erro.
       final data = await rootBundle.load('assets/animations/speed_cup_v1.riv');
       final file = RiveFile.import(data);
       final artboard = file.mainArtboard;
@@ -45,7 +44,7 @@ class _LiveCupWidgetState extends State<LiveCupWidget> {
       }
       setState(() => _riveArtboard = artboard);
     } catch (e) {
-      debugPrint('Rive File Not Found: $e');
+      debugPrint('Rive Asset ainda não encontrado. Mostrando placeholder.');
     }
   }
 
@@ -62,23 +61,20 @@ class _LiveCupWidgetState extends State<LiveCupWidget> {
     if (_controller == null) return;
     final state = widget.controller.value;
 
-    // Sincroniza Tamanho
     if (_cupSizeInput?.value != state.sizeIndex.toDouble()) {
        _cupSizeInput?.value = state.sizeIndex.toDouble();
     }
 
-    // Sincroniza Slot 1 (Base)
-    if (state.toppings.isNotEmpty) {
-      double t1 = state.toppings[0].id.toDouble();
+    if (state.selectedToppings.isNotEmpty) {
+      double t1 = state.selectedToppings[0].id.toDouble();
       if (_slot1IdInput?.value != t1) {
         _slot1IdInput?.value = t1;
         _slot1AddTrigger?.fire();
       }
     }
 
-    // Sincroniza Slot 2 (Topo)
-    if (state.toppings.length > 1) {
-      double t2 = state.toppings[1].id.toDouble();
+    if (state.selectedToppings.length > 1) {
+      double t2 = state.selectedToppings[1].id.toDouble();
       if (_slot2IdInput?.value != t2) {
         _slot2IdInput?.value = t2;
         _slot2AddTrigger?.fire();
@@ -92,10 +88,14 @@ class _LiveCupWidgetState extends State<LiveCupWidget> {
       height: 400,
       width: double.infinity,
       child: _riveArtboard == null
-          ? const Center(
-              child: Text(
-                "Aguardando Rive Asset...", 
-                style: TextStyle(color: Colors.white24),
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.local_drink, size: 50, color: Colors.white24),
+                  const SizedBox(height: 10),
+                  const Text("Copo em Construção", style: TextStyle(color: Colors.white24)),
+                ],
               ),
             )
           : Rive(artboard: _riveArtboard!, fit: BoxFit.contain),
