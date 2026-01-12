@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../data/datasources/menu_mock_datasource.dart';
 import '../../domain/entities/ingredient.dart';
 
+// Enum para controlar os passos da UI
 enum OrderStep { flavor, complements, toppings, review }
 
 class WizardController extends ChangeNotifier {
+  // O estado público que a UI vai consumir.
   final WizardState state = WizardState();
   final MenuMockDataSource _dataSource = MenuMockDataSource();
 
@@ -12,6 +14,7 @@ class WizardController extends ChangeNotifier {
     _loadMenu();
   }
 
+  // Carrega o cardápio a partir da fonte de dados.
   Future<void> _loadMenu() async {
     state.isLoading = true;
     notifyListeners();
@@ -23,7 +26,9 @@ class WizardController extends ChangeNotifier {
     }
   }
 
-  // Navegação
+  // --- MÉTODOS PÚBLICOS PARA A UI ---
+
+  // Avança para o próximo passo do wizard.
   void nextStep() {
     if (state.currentStep == OrderStep.flavor && state.selectedFlavor == null) return;
     
@@ -37,6 +42,7 @@ class WizardController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Retorna para o passo anterior.
   void previousStep() {
     if (state.currentStep == OrderStep.complements) {
       state.currentStep = OrderStep.flavor;
@@ -48,7 +54,7 @@ class WizardController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Seleção
+  // Seleciona ou deseleciona um ingrediente.
   void selectItem(Ingredient item) {
     switch (item.type) {
       case IngredientType.flavor:
@@ -57,7 +63,7 @@ class WizardController extends ChangeNotifier {
       case IngredientType.complement:
         if (state.selectedComplements.contains(item)) {
           state.selectedComplements.remove(item);
-        } else if (state.selectedComplements.length < 2) { // NOVO LIMITE: MAX 2
+        } else if (state.selectedComplements.length < 2) { // LIMITE: MAX 2
           state.selectedComplements.add(item);
         }
         break;
@@ -73,17 +79,8 @@ class WizardController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _calculateTotal() {
-    double total = 0.0;
-    if (state.selectedFlavor != null) total += state.selectedFlavor!.price;
-    for (var i in state.selectedComplements) total += i.price;
-    for (var i in state.selectedToppings) total += i.price;
-    state.totalPrice = total;
-  }
-
-  // Ação Final
+  // Finaliza o pedido.
   void finishOrder(BuildContext context) {
-    // Simula envio para API/Impressora Térmica
     debugPrint("=== NOVO PEDIDO SPEED GUARANÁ ===");
     debugPrint("BASE: ${state.selectedFlavor?.name}");
     debugPrint("COMPLEMENTOS: ${state.selectedComplements.map((e) => e.name).join(', ')}");
@@ -99,7 +96,6 @@ class WizardController extends ChangeNotifier {
       ),
     );
 
-    // Reinicia após 2 segundos
     Future.delayed(const Duration(seconds: 2), () {
       state.selectedFlavor = null;
       state.selectedComplements.clear();
@@ -110,7 +106,9 @@ class WizardController extends ChangeNotifier {
     });
   }
 
-  // Getters de UI
+  // --- GETTERS PÚBLICOS PARA A UI ---
+
+  // Retorna a lista de itens para o passo atual.
   List<Ingredient> get currentStepItems {
     switch (state.currentStep) {
       case OrderStep.flavor: return state.fullMenu.where((i) => i.type == IngredientType.flavor).toList();
@@ -120,6 +118,7 @@ class WizardController extends ChangeNotifier {
     }
   }
 
+  // Retorna o título para o passo atual.
   String get stepTitle {
     switch (state.currentStep) {
       case OrderStep.flavor: return "Escolha o Tamanho";
@@ -128,8 +127,19 @@ class WizardController extends ChangeNotifier {
       case OrderStep.review: return "Revisão do Pedido";
     }
   }
+
+  // --- MÉTODOS PRIVADOS ---
+
+  void _calculateTotal() {
+    double total = 0.0;
+    if (state.selectedFlavor != null) total += state.selectedFlavor!.price;
+    for (var i in state.selectedComplements) total += i.price;
+    for (var i in state.selectedToppings) total += i.price;
+    state.totalPrice = total;
+  }
 }
 
+// A classe que detém todos os dados do estado do wizard.
 class WizardState {
   bool isLoading = false;
   OrderStep currentStep = OrderStep.flavor;

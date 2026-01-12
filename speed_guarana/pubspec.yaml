@@ -10,6 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Utilitário para comparações de listas
+  collection: ^1.18.0
+
   # Ícones Padrão
   cupertino_icons: ^1.0.8
 

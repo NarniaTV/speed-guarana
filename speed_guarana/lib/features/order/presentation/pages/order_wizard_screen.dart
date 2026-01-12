@@ -141,9 +141,13 @@ class _SelectionStep extends StatelessWidget {
   }
 
   bool _isItemSelected(WizardState state, Ingredient item) {
-    if (item.type == IngredientType.flavor) return state.selectedFlavor?.id == item.id;
-    if (item.type == IngredientType.complement) return state.selectedComplements.contains(item);
-    if (item.type == IngredientType.topping) return state.selectedToppings.contains(item);
+    if (item.type == IngredientType.flavor) {
+      return state.selectedFlavor?.id == item.id;
+    } else if (item.type == IngredientType.complement) {
+      return state.selectedComplements.contains(item);
+    } else if (item.type == IngredientType.topping) {
+      return state.selectedToppings.contains(item);
+    }
     return false;
   }
 }
@@ -323,7 +327,7 @@ class _IngredientCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.neonGreen.withOpacity(0.15) : AppColors.surfaceDark,
+          color: isSelected ? AppColors.neonGreen.withAlpha((255 * 0.15).round()) : AppColors.surfaceDark,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: isSelected ? AppColors.neonGreen : Colors.white10, width: isSelected ? 2 : 1),
         ),
@@ -339,7 +343,11 @@ class _IngredientCard extends StatelessWidget {
       ),
     );
   }
-  IconData _getIcon(IngredientType type) => type == IngredientType.flavor ? Icons.local_drink : (type == IngredientType.complement ? Icons.cookie : Icons.water_drop);
+  IconData _getIcon(IngredientType type) {
+    if (type == IngredientType.flavor) return Icons.local_drink;
+    if (type == IngredientType.complement) return Icons.cookie;
+    return Icons.water_drop;
+  }
 }
 
 class _GlassBadge extends StatelessWidget {
@@ -349,7 +357,7 @@ class _GlassBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
+      decoration: BoxDecoration(color: Colors.black.withAlpha((255 * 0.3).round()), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
       child: child,
     );
   }

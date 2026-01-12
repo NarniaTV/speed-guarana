@@ -12,7 +12,6 @@ class AppTheme {
         primary: AppColors.neonGreen,
         secondary: AppColors.guaranaRed,
         surface: AppColors.surfaceDark,
-        background: AppColors.backgroundBlack,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
